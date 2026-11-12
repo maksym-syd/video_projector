@@ -2,30 +2,33 @@
 
 Dual-projector blending with **video support**, a test GUI, a crop/fit picture mode and a shared
 start time. It is the video version of the PBL4 dual-projector project (`projector_pbl4`), kept
-in its own repository. Pictures and the test video are not in Git: make the test video with
-`python tools/make_test_video.py`, and put your own pictures wherever `sourcePath` points.
+in its own repository. The submission zip includes the test pictures and the test video
+`test_images/demo.mp4`. A Git clone has the test pictures but not the test video: it is made
+the first time `instant_run.py` runs, or with `python tools/make_test_video.py`. Your own
+pictures or videos go wherever `sourcePath` points.
 
 ## Quick start
 
-**1. Install (once).** With [uv](https://docs.astral.sh/uv/) (see Option A below to install it):
+**1. Install (once).** Unzip `video_projector.zip` and open a terminal in the `video_projector`
+folder (or clone it: `git clone https://github.com/maksym-syd/video_projector.git` and
+`cd video_projector`).
+
+With [uv](https://docs.astral.sh/uv/) (to install uv, see [Option A](#option-a-using-uv-recommended) below):
 
 ```bash
-git clone https://github.com/maksym-syd/video_projector.git
-cd video_projector
 uv sync
 ```
 
-Without uv, any Python 3.12 or newer works:
+Without uv, any Python 3.12 or newer works (get it from [python.org](https://www.python.org/downloads/)):
 
 ```bash
-git clone https://github.com/maksym-syd/video_projector.git
-cd video_projector
 python3 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
 
-On Windows, type `py` instead of `python3`.
+`requirements-dev.txt` includes `pytest` for the tests. `requirements.txt` has only what is
+needed to run the program. On Windows, type `py` instead of `python3`.
 
 **2. Try it on one computer (no projectors needed):**
 
@@ -45,6 +48,49 @@ uv run python instant_run.py --left --start-in 30      # without uv: python inst
 It prints the command for the right laptop, with the same start time. Run that on the second
 laptop within 30 seconds, and both start together. More options are in
 [Quick test on the projectors](#quick-test-on-the-projectors).
+
+**4. Run the tests:**
+
+```bash
+uv run pytest                      # without uv: pytest
+```
+
+All tests should pass (about 570; one may be skipped).
+
+---
+
+## Settings
+
+The settings are in a JSON file. `settings.json` shows a picture (`test_images/grid.png`), and
+`settings.video.json` shows the test video (`test_images/demo.mp4`). `instant_run.py` uses
+`settings.video.json`, and `settings.json` with `--image`.
+
+| Field | Meaning | Example |
+|---|---|---|
+| `projectorResXY` | Resolution of one projector in pixels, `[width, height]` | `[1920, 1080]` |
+| `imageWidthCm` (`w`) | Width of the picture of **one** projector on the wall, in cm | `134.0` |
+| `projectorSpacingCm` (`d`) | Distance between the two projected pictures, in cm, measured left edge to left edge (the same as centre to centre). The overlap is `w - d`, so `d` must be smaller than `w` | `108.0` |
+| `blendCurveGamma` | Shape of the fade in the overlap, from 0.5 to 3.0. 2.0 gave an even join on our projectors; 1.0 left a dark line | `2.0` |
+| `sourcePath` | Picture (`.jpg`, `.png`, ...) or video (`.mp4`, `.m4v`, `.mov`, `.avi`, `.mkv`, `.webm`). A relative path is relative to the settings file, here the project folder | `test_images/grid.png` |
+| `projectorSide` | `LEFT` or `RIGHT`: the projector this computer drives. `--side` overrides it | `LEFT` |
+| `scaleMode` | `crop` (default) or `fit`, see [Picture proportions](#picture-proportions). `--scale-mode` overrides it | `crop` |
+
+Both computers use the same file. Only `projectorSide` differs, or give `--side` on the command
+line. To check that the files on the two computers match (the side may differ):
+
+```bash
+python tools/check_settings.py settings.json other_settings.json
+```
+
+### How to measure w and d
+
+1. Turn on both projectors and show the full-screen test pattern on each laptop:
+   `python tools/show_test_pattern.py --width 1920 --height 1080` (use `--screen` to choose
+   the projector's screen).
+2. With a tape measure, measure the width of one projected picture. That is `w`.
+3. Measure the distance from the left edge of the left picture to the left edge of the right
+   picture. That is `d`. It must be smaller than `w`.
+4. Write both values, in cm, into the settings file on both computers.
 
 ---
 
@@ -130,13 +176,17 @@ uv run pytest                      # run the tests
 
 If you can't install uv, you can use the standard `venv` and `pip` tools.
 
-### 1. Install Python 3.14
+### 1. Install Python
 
-Download it from [python.org](https://www.python.org/downloads/) and check the version:
+Python 3.14 is recommended (it is the version pinned for uv). With pip, Python 3.12 and 3.13
+work too. Download it from [python.org](https://www.python.org/downloads/) and check the version:
 
 ```bash
-python3 --version   # Windows: py -3.14 --version
+python3 --version   # Windows: py --version
 ```
+
+The commands below use `python3` (Windows: `py`). To pick a version when several are installed,
+use for example `python3.14` (Windows: `py -3.14`).
 
 ### 2. Create and activate a virtual environment
 
@@ -145,7 +195,7 @@ python3 --version   # Windows: py -3.14 --version
 ```bash
 git clone https://github.com/maksym-syd/video_projector.git
 cd video_projector
-python3.14 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
@@ -154,7 +204,7 @@ source .venv/bin/activate
 ```powershell
 git clone https://github.com/maksym-syd/video_projector.git
 cd video_projector
-py -3.14 -m venv .venv
+py -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
